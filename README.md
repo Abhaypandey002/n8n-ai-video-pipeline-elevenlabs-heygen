@@ -1,72 +1,97 @@
 # n8n-ai-video-pipeline-elevenlabs-heygen
 Google Sheets/Docs ➜ n8n ➜ ElevenLabs voice ➜ HeyGen avatar video ➜ Drive — fully automated AI clone video pipeline with status polling and sheet updates.
 
-Stack
+## 🚀 What this workflow does
 
-n8n (workflow engine)
+**Trigger**: Google Sheets rowAdded (when Status = NEW)
 
-Google Sheets, Docs, Drive
+**Fetch**: Read the Google Doc content
 
-OpenAI (LLM)
+**Condense**: LLM “Script Writer” prepares voice-ready text
 
-HeyGen (avatar video)
+**Generate**: Create avatar video via HeyGen /v2/video/generate
 
-What the workflow does
+**Poll**: Check /v1/video_status.get until completed
 
-Trigger: Google Sheets rowAdded (Status = NEW).
+**Store**: Upload MP4 to Drive
 
-Docs: Fetch the document by URL.
+**Update**: Write VideoLink to the sheet and flip Status → DONE
 
-Script Writer: Summarize/condense text for spoken delivery.
+## 🧱 Stack
 
-HeyGen: Generate video (/v2/video/generate).
+**n8n** (workflow engine)
 
-Status Polling: Check /v1/video_status.get until completed.
+**Google Sheets, Docs, Drive**
 
-Drive: Upload MP4 and update the sheet (Status=DONE, VideoLink).
+**OpenAI** (LLM for the Script Writer)
 
-Prerequisites
+**HeyGen** (avatar video)
 
-Create credentials in n8n:
+**Elvenlabs** (Cloned Voice)
 
-OpenAI → replace REPLACE_WITH_OPENAI_CREDENTIAL_*
+## 📋 Prerequisites
 
-HeyGen Header Auth (API key) → replace REPLACE_WITH_HEYGEN_HEADER_AUTH_*
+Create credentials in **n8n → Credentials** and plug them into the workflow:
 
-Google Docs / Sheets / Drive → replace the REPLACE_WITH_GOOGLE_* placeholders
+  **OpenAI** → replace `REPLACE_WITH_OPENAI_CREDENTIAL_*`
 
-Update IDs/placeholders in the workflow:
+  **HeyGen Header Auth** (API key) → replace `REPLACE_WITH_HEYGEN_HEADER_AUTH_*`
 
-YOUR_GOOGLE_SHEET_ID and sheet gid
+  **Google Docs / Sheets / Drive** → replace `REPLACE_WITH_GOOGLE_*`
 
-YOUR_DRIVE_FOLDER_ID
+Replace placeholders in node parameters:
 
-YOUR_HEYGEN_AVATAR_ID and YOUR_HEYGEN_VOICE_ID (or keep the defaults)
+  `YOUR_GOOGLE_SHEET_ID` (and the `gid` if needed)
 
-Google Sheet (suggested columns)
+  `YOUR_DRIVE_FOLDER_ID`
 
-Status | Title | GoogleDocURL | VideoLink
+  `YOUR_HEYGEN_AVATAR_ID` and `YOUR_HEYGEN_VOICE_ID`
 
-New row: set Status=NEW, fill Title and GoogleDocURL.
+## 📑 Google Sheet structure (suggested)
 
-The workflow sets VideoLink and flips Status to DONE.
+<img width="813" height="122" alt="image" src="https://github.com/user-attachments/assets/eb515062-62ec-414b-907f-147320fa69f2" />
 
-Import & Run
 
-In n8n, Import the JSON workflow.
+Add a new row with `Status = NEW`, `Title`, and a valid GoogleDocURL.
 
-Open nodes with red credential badges and assign your creds.
+The workflow sets `VideoLink` and flips `Status → DONE`.
 
-In Generate Video node, confirm avatar/voice IDs.
+## 🔧 Import & Run
 
-Activate the workflow.
+  1. In n8n, **Import** the provided JSON workflow.
+  
+  2. Connect your Heygen with ElvenLabs via `API`
+  
+  3. Open nodes with red credential badges and assign your creds.
+  
+  4. In **Generate Video** node, confirm your **avatar_id / voice_id**.
+  
+  5. **Activate** the workflow.
 
-Add a row in the sheet (Status=NEW) and watch the link appear after render.
+Append a new row to the sheet with `Status = NEW` → video link appears after render.
 
-Notes / Gotchas
+## 🗺️ Flow (overview)
+`flowchart LR
 
-If Docs returns 404, share the file with the same Google account used by your n8n credential.
+  A[Google Sheets: add row (Status=NEW)] --> B[Get Google Doc]
+  
+  B --> C[Script Writer (LLM)]
+  
+  C --> D[HeyGen /v2/video/generate]
+  
+  D --> E[Poll /v1/video_status.get]
+  
+  E --> F[Download MP4]
+  
+  F --> G[Upload to Google Drive]
+  
+  G --> H[Update Sheet (VideoLink, Status=DONE)]`
+  
 
-If HeyGen body errors with “valid JSON,” switch the Body → JSON field to Expression mode so n8n escapes quotes/newlines.
+## 🩺 Troubleshooting
 
-Inserted rows at the top may not fire rowAdded. Prefer appending at the bottom, or swap to a Cron + Read pattern to sweep all NEW rows.
+  1. **Docs 404 / NOT_FOUND** → Share the Doc with the same Google account used by your **Docs credential**; or pass the **Document ID** instead of the full URL.
+    
+  2. “**JSON must be valid” (HTTP node)** → Set **Body** → **JSON** to **Expression mode** so n8n escapes quotes/newlines automatically.
+    
+  3. **rowAdded didn’t fire** → Inserted rows at the top may not trigger; append at bottom or switch to a **Cron + Read** sweeper pattern.
