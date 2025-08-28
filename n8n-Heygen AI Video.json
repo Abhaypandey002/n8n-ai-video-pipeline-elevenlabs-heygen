@@ -1,0 +1,819 @@
+{
+  "name": "n8n-Heygen AI Video v2",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json[\"Status\"] }}",
+              "rightValue": "NEW",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "equals"
+              },
+              "id": "53dab12a-9583-478d-afa3-6f3e9b88bfe4"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b10915c4-b2b1-4238-8dc8-cdc9e3deeb95",
+      "name": "IF NEW",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1408,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "mode": "list",
+          "value": "gpt-4.1-mini",
+          "__rl": true
+        },
+        "options": {}
+      },
+      "id": "35be0db9-f7ad-4e76-81f1-e4acb557aebd",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        272
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_OPENAI_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_OPENAI_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.heygen.com/v1/video_status.get",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $json.data.video_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4abcf1d0-eb8a-4da8-9dfe-7a2fefec4649",
+      "name": "Get Video Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -448,
+        192
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEYGEN_HEADER_AUTH_ID",
+          "name": "REPLACE_WITH_HEYGEN_HEADER_AUTH_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "equals"
+              },
+              "id": "8538afff-a904-42cf-bb5f-cd9464305baa"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7c6fb0a9-14e6-433e-b7ad-5c5c515f43c0",
+      "name": "IF Completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "3e59153b-e2fb-406b-8225-b90237a879ca",
+      "name": "Wait Again",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        416
+      ],
+      "webhookId": "72a4728d-4be1-4b3c-b994-ca1dbc9f22a9"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.video_url }}",
+        "options": {}
+      },
+      "id": "f0f3b92e-7544-4ca1-a7eb-eb400b0b4049",
+      "name": "Download MP4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "fileContent": "Video",
+        "name": "={{ $('Generate Video1').item.json.data.video_id }}",
+        "options": {}
+      },
+      "id": "21174063-cbf7-418e-9a02-1b8fe2f15ad0",
+      "name": "Drive: Upload MP4",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        528,
+        368
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_GOOGLE_DRIVE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_SHEET_NAME",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        304
+      ],
+      "id": "3f5a4857-d24e-4b9b-b773-70723c0cf980",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "REPLACE_WITH_SHEETS_TRIGGER_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_SHEETS_TRIGGER_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ $json.GoogleDocURL }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        96
+      ],
+      "id": "ba5d3dd1-05fa-49ee-b175-1b9ee31f0340",
+      "name": "Get a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_DOCS_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_GOOGLE_DOCS_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"YOUR_HEYGEN_AVATAR_ID\",\n        \"avatar_style\": \"normal\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"input_text\": \"{{ $json.output }}\",\n        \"voice_id\": \"YOUR_HEYGEN_VOICE_ID\",\n        \"speed\": 1.1\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 1280,\n    \"height\": 720\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -544,
+        -96
+      ],
+      "id": "8aee1f3f-7efd-45b7-b407-a63b8d28b5b9",
+      "name": "Generate Video1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEYGEN_HEADER_AUTH_ID",
+          "name": "REPLACE_WITH_HEYGEN_HEADER_AUTH_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"YOUR_HEYGEN_AVATAR_ID\",\n        \"avatar_style\": \"normal\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"input_text\": \"What’s going on, family! I’m Neo, and I’m on a mission. I’m not here to impress you with titles or achievements—I’m here to show you what’s possible when you refuse to settle for average.I know what it feels like to start from the bottom. I understand what it’s like to have people doubt you, count you out, and tell you your dreams are too big. But I also know the power of making a decision—a decision that says, no matter the odds, I will win.That decision transformed my life. It took me from surviving to thriving, from merely existing to living with real purpose. Now, every single day, I dedicate my life to helping others do the same.Here’s the truth: your past does not dictate your future, and your current situation is not your final destination.So, as I stand here today, I’m not just speaking to you—I’m speaking to the dreamer inside you, the fighter inside you, the greatness waiting to be unleashed.My name is Neo, and I’m here to remind you: it’s your time.\",\n        \"voice_id\": \"YOUR_HEYGEN_VOICE_ID\",\n        \"speed\": 1.1\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 1280,\n    \"height\": 720\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -496,
+        -768
+      ],
+      "id": "82045b66-9315-41e5-9c63-81cfa719ab74",
+      "name": "Generate Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEYGEN_HEADER_AUTH_ID",
+          "name": "REPLACE_WITH_HEYGEN_HEADER_AUTH_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.heygen.com/v2/voices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -768,
+        -768
+      ],
+      "id": "516e5c50-6467-4ecc-88ba-6b50025918b8",
+      "name": "Get Voices",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEYGEN_HEADER_AUTH_ID",
+          "name": "REPLACE_WITH_HEYGEN_HEADER_AUTH_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.heygen.com/v2/avatars",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        -768
+      ],
+      "id": "b1ac261d-81f5-4497-a726-d876ce19dab1",
+      "name": "Get Avatars",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEYGEN_HEADER_AUTH_ID",
+          "name": "REPLACE_WITH_HEYGEN_HEADER_AUTH_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.heygen.com/v1/video_status.get",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $json.data.video_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        -768
+      ],
+      "id": "20ccfe89-853c-4e08-92eb-2e0ba0f33434",
+      "name": "Get Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEYGEN_HEADER_AUTH_ID",
+          "name": "REPLACE_WITH_HEYGEN_HEADER_AUTH_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_SHEET_NAME",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "=DONE",
+            "Title": "={{ $('IF NEW').item.json.Title }}",
+            "VideoLink": "={{ $('Get Video Status').item.json.data.video_url }}"
+          },
+          "matchingColumns": [
+            "Title"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "GoogleDocURL",
+              "displayName": "GoogleDocURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "VideoLink",
+              "displayName": "VideoLink",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "28271396-0759-4c28-9502-508e62dedc81",
+      "name": "Update Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        592,
+        176
+      ],
+      "typeVersion": 4.5,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_GOOGLE_SHEETS_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.data.id }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_DRIVE_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_DRIVE_FOLDER_NAME",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/YOUR_DRIVE_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "id": "81d0c324-2578-4474-baaa-303107f56c29",
+      "name": "Upload Final Video",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        304,
+        176
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_GOOGLE_DRIVE_CREDENTIAL_NAME"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.content }}",
+        "options": {
+          "systemMessage": "### 📢 System Prompt: Morning Brew Video Recap Script Generator\\n\\nYou are a sharp, engaging scriptwriter AI who specializes in converting daily newsletter content into **fast-paced, digestible news recaps** for short-form video. You will be given the full text of a *Morning Brew* issue. Your job is to create a **concise 10–20 second script** (around 40–60 words) summarizing **the top 2–4 most important stories** in an **engaging, headline-driven tone** that sounds natural when spoken aloud.\\n\\n---\\n\\n### ✅ Core Requirements:\\n- Output a **single paragraph** written for **spoken delivery**, not robotic narration.\\n- Cover **only the top 2–4 stories** with the widest impact or highest interest.\\n- Use a **punchy, conversational tone** — brief but informative.\\n- Do **not include** intros, outros, or calls to action.\\n- Keep the total script under **20 seconds of spoken content** (~40–60 words).\\n\\n---\\n\\n### 🗣️ Style Example:\\n\\n\\\"Stocks jumped after inflation cooled again in April, TikTok sued the US government over its forced sale law, and McDonald’s is dropping AI drive-thrus after too many sauce mishaps.\\\"\\n\\n---\\n\\n### 💡 Notes:\\n- Prioritize clarity and relevance.\\n- Avoid niche stories unless they’re especially compelling or viral.\\n- Think of the recap as something someone could say on a podcast or short TikTok video.\\n"
+        }
+      },
+      "id": "2ff9c62b-2920-42cf-9858-26c50d419346",
+      "name": "Script Writer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -896,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 180
+      },
+      "id": "7e79b626-4e8a-42a8-8baa-20cdbbd1d82b",
+      "name": "Wait 180s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        -96
+      ],
+      "webhookId": "93a41ef3-2636-4911-8ed5-e451218cc590"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 60
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1840,
+        128
+      ],
+      "id": "b1188f5f-8140-4cca-b3fc-101b5d709d8b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_SHEET_NAME",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        112
+      ],
+      "id": "b18a50e7-313b-43ae-ac21-4cfdbf5e558f",
+      "name": "Google Sheets Trigger1",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "REPLACE_WITH_SHEETS_TRIGGER_CREDENTIAL_ID",
+          "name": "REPLACE_WITH_SHEETS_TRIGGER_CREDENTIAL_NAME"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Script Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Status": {
+      "main": [
+        [
+          {
+            "node": "IF Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Completed?": {
+      "main": [
+        [
+          {
+            "node": "Download MP4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Again",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Again": {
+      "main": [
+        [
+          {
+            "node": "Get Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download MP4": {
+      "main": [
+        [
+          {
+            "node": "Upload Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drive: Upload MP4": {
+      "main": [
+        []
+      ]
+    },
+    "Google Sheets Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "IF NEW": {
+      "main": [
+        [
+          {
+            "node": "Get a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document": {
+      "main": [
+        [
+          {
+            "node": "Script Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video1": {
+      "main": [
+        [
+          {
+            "node": "Wait 180s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video": {
+      "main": [
+        [
+          {
+            "node": "Get Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script Writer": {
+      "main": [
+        [
+          {
+            "node": "Generate Video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Final Video": {
+      "main": [
+        [
+          {
+            "node": "Update Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 180s": {
+      "main": [
+        [
+          {
+            "node": "Get Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger1": {
+      "main": [
+        [
+          {
+            "node": "IF NEW",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f7cc735b-caa4-42ef-abdd-77f3e4ada92b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e09bdd12839b591c2c588def211ad617bc5c6350b7d6f40e5d67f92564a93439"
+  },
+  "id": "E7vdSEJdbaQ8JV7l",
+  "tags": []
+}
